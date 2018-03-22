@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">TestCourseRegistration</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="emailpassword_status_fmt">User Email: %1$s (verified: %2$b)</string>
+    <string name="firebase_status_fmt">Firebase User: %s</string>
+    <string name="password">Password</string>
+    <string name="email">Email</string>
+    <string name="sign_in">Sign In</string>
+    <string name="classSearch">Class Search</string>
+</resources>
+
