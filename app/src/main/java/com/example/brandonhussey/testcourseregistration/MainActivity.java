@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,6 +17,13 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -22,10 +31,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     //firebase declaration
     private FirebaseAuth mAuth;
+
+    //Textviews
     private TextView emailField;
     private TextView passwordField;
     private TextView mStatusTextView;
-    private TextView mDetailTextView;
+    private TextView firstName;
+    private TextView lastName;
+
+    FirebaseDatabase database = FirebaseDatabase.getInstance();
+    DatabaseReference reference;
+
+    private ListView courseList;
+
+    private ArrayList<String> arrayList = new ArrayList<>();
+    private ArrayAdapter<String> adapter;
+
+    Course course = new Course();
+
 
 
     @Override
@@ -37,8 +60,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         emailField = findViewById(R.id.email);
         passwordField = findViewById(R.id.password);
         mStatusTextView = findViewById(R.id.status);
-        mDetailTextView = findViewById(R.id.detail);
-
+        firstName = findViewById(R.id.firstName);
+        lastName = findViewById(R.id.lastName);
 
         findViewById(R.id.signIn).setOnClickListener(this);
         findViewById(R.id.sign_out_button).setOnClickListener(this);
@@ -46,7 +69,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         //initialize db
         mAuth = FirebaseAuth.getInstance();
-        
+
+        reference = database.getReference("User");
+
+        adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, arrayList);
+        courseList = (ListView) findViewById(R.id.classList);
+
+       /* reference.child(currentUser.getUid().toString()).child("Enrolled").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                getData(dataSnapshot, arrayList);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });*/
+
+
     }
 
     @Override
@@ -54,6 +95,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onStart();
         // Check if user is signed in (non-null) and update UI accordingly.
         FirebaseUser currentUser = mAuth.getCurrentUser();
+
         updateUI(currentUser);
     }
 
@@ -113,20 +155,56 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (currentUser != null) {
             mStatusTextView.setText(getString(R.string.emailpassword_status_fmt,
                     currentUser.getEmail(), currentUser.isEmailVerified()));
-            mDetailTextView.setText(getString(R.string.firebase_status_fmt, currentUser.getUid()));
+
+            reference.child(currentUser.getUid().toString()).child("Enrolled").addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    getData(dataSnapshot, arrayList);
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            });
+
+            reference.child(currentUser.getUid().toString()).addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    User user = dataSnapshot.getValue(User.class);
+                    firstName.setText(user.getFirstName());
+                    lastName.setText(user.getLastName());
+
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            });
+
+
 
             emailField.setVisibility(View.GONE);
             passwordField.setVisibility(View.GONE);
             findViewById(R.id.signIn).setVisibility(View.GONE);
             findViewById(R.id.sign_out_button).setVisibility(View.VISIBLE);
             findViewById(R.id.classSearch).setVisibility(View.VISIBLE);
+            findViewById(R.id.classList).setVisibility(View.VISIBLE);
+            findViewById(R.id.myClasses).setVisibility(View.VISIBLE);
+            findViewById(R.id.firstName).setVisibility(View.VISIBLE);
+            findViewById(R.id.lastName).setVisibility(View.VISIBLE);
 
 
         } else {
             mStatusTextView.setText(null);
-            mDetailTextView.setText(null);
             findViewById(R.id.sign_out_button).setVisibility(View.GONE);
             findViewById(R.id.classSearch).setVisibility(View.GONE);
+            findViewById(R.id.classList).setVisibility(View.GONE);
+            findViewById(R.id.myClasses).setVisibility(View.GONE);
+            findViewById(R.id.firstName).setVisibility(View.GONE);
+            findViewById(R.id.lastName).setVisibility(View.GONE);
+
 
         }
     }
@@ -140,7 +218,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } else if (i == R.id.sign_out_button) {
             signOut();
         } else if (i == R.id.classSearch)   {
-            Intent classSearchIntent = new Intent(MainActivity.this, ClassSearch.class);
+            Intent classSearchIntent = new Intent(MainActivity.this, SearchFilter.class);
             startActivity(classSearchIntent);
         }
     }
@@ -153,5 +231,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         passwordField.setVisibility(View.VISIBLE);
         findViewById(R.id.signIn).setVisibility(View.VISIBLE);
         findViewById(R.id.sign_out_button).setVisibility(View.GONE);
+    }
+
+    public void getData(DataSnapshot dataSnapshot, ArrayList<String> courses) {
+
+        courses.clear();
+
+        for(DataSnapshot ds: dataSnapshot.getChildren())    {
+            course = ds.getValue(Course.class);
+            arrayList.add(course.getName());
+
+        }
+        courseList.setAdapter(adapter);
     }
 }

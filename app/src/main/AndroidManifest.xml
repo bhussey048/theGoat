@@ -16,7 +16,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ClassSearch"></activity>
+        <activity android:name=".ClassSearch" />
+        <activity android:name=".CourseDetail" />
+        <activity android:name=".SearchFilter"></activity>
     </application>
 
 </manifest>

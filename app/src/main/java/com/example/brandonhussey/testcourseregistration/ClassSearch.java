@@ -1,8 +1,11 @@
 package com.example.brandonhussey.testcourseregistration;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -16,48 +19,73 @@ import java.util.ArrayList;
 
 public class ClassSearch extends AppCompatActivity {
 
-
     private static final String TAG = "ClassSearch";
-    FirebaseDatabase db;
-    DatabaseReference courseRef;
 
-    private ArrayList<String> arrayList = new ArrayList<String>();
-    private ArrayAdapter<String> adapter;
+
+
+
+    //set up database
+    FirebaseDatabase database = FirebaseDatabase.getInstance();
+    DatabaseReference reference;
+
+
     private ListView courseList;
-    Course course;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_class_search);
+  private ArrayList<Course> arrayList = new ArrayList<>();
+  private ArrayAdapter<Course> adapter;
 
-        course = new Course();
 
-        //initialize the db
-        db = FirebaseDatabase.getInstance();
-        courseRef = db.getReference("Course");
 
-        adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, arrayList);
+  Course course = new Course();
 
-        courseList = (ListView) findViewById(R.id.courseList);
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_class_search);
 
-        courseRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
+      String filter = getIntent().getStringExtra("key");
 
-                for(DataSnapshot ds: dataSnapshot.getChildren())    {
+      reference = database.getReference().child(filter);
 
-                    course = ds.getValue(Course.class);
-                    arrayList.add(course.getName().toString() + "\tActual" + course.getActual() + "\tCapactiy" + course.getCapacity());
-                }
-                courseList.setAdapter(adapter);
-            }
+      adapter = new ArrayAdapter<Course>(this, android.R.layout.simple_list_item_1, arrayList);
+      courseList = (ListView) findViewById(R.id.courseList);
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
 
-                Log.w(TAG, "Failed to read value.", databaseError.toException());
-            }
-        });
-    }
+
+      reference.addValueEventListener(new ValueEventListener() {
+        @Override
+        public void onDataChange(DataSnapshot dataSnapshot) {
+            getData(dataSnapshot, arrayList);
+        }
+
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
+
+            Log.w(TAG, "Failed to read value.", databaseError.toException());
+
+        }
+    });
+
+      courseList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+          @Override
+          public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+              Course detail = (Course) adapterView.getItemAtPosition(i);
+              Intent intent = new Intent(ClassSearch.this, CourseDetail.class);
+              intent.putExtra("Course", detail);
+              startActivity(intent);
+          }
+      });
+  }
+
+  public void getData(DataSnapshot dataSnapshot, ArrayList<Course> courses) {
+
+      courses.clear();
+
+      for(DataSnapshot ds: dataSnapshot.getChildren())    {
+          course = ds.getValue(Course.class);
+          arrayList.add(course);
+
+      }
+      courseList.setAdapter(adapter);
+  }
 }
